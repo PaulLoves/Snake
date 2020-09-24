@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class GameManager : MonoBehaviour
@@ -145,13 +146,12 @@ public class GameManager : MonoBehaviour
         if (!food.FoodAlreadyGenerated)
             food.GenerateFood(gameGrid);
 
-        snake.Move(movementDirection, gameGrid);
-
-        try //Should fix this later.
+        try
         {
+            snake.Move(movementDirection, gameGrid);
+
             QuerySnakeHead();
 
-        
             //Map everythig to the grid.
             foreach (var p in plottables)
             {
@@ -159,6 +159,7 @@ public class GameManager : MonoBehaviour
             }
         }
         catch { }
+       
     }
 
     IEnumerator RunGameLoopRoutine()
@@ -221,16 +222,23 @@ public class GameManager : MonoBehaviour
     void DisplayGameOverScreen()
     {
         gameOverButtonObject.SetActive(true);
+    }
 
+    public void RetryButton()
+    {
         //Set layout value to 0 if there is no text in the input field.
         try
         {
-            PlayerPrefs.SetInt("layout", int.Parse(layoutInputField.text));
+            int index = int.Parse(layoutInputField.text);
+            if(index > 2) index = 0;
+            PlayerPrefs.SetInt("layout", index);
         }
         catch (Exception)
         {
             PlayerPrefs.SetInt("layout", 0);
         }
+
+        SceneManager.LoadScene("Main");
     }
 }
 

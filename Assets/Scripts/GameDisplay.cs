@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameDisplay : MonoBehaviour
 {
@@ -96,10 +95,5 @@ public class GameDisplay : MonoBehaviour
             UpdatePlayground();
             yield return new WaitForSeconds(manager.GameTickLength);
         }
-    }
-
-    public void RetryButton()
-    {
-        SceneManager.LoadScene("Main");
     }
 }
