@@ -18,13 +18,11 @@ public class CubeFade : MonoBehaviour
 
     public void FadeIn()
     {
-        StopCoroutine(FadeOutRoutine());
         StartCoroutine(FadeInRoutine());
     }
 
     public void FadeOut()
     {
-        StopCoroutine(FadeInRoutine());
         StartCoroutine(FadeOutRoutine());
     }
 
@@ -52,9 +50,8 @@ public class CubeFade : MonoBehaviour
             transform.localScale = Utils.ClampComponents(transform.localScale, 0, 1);
             yield return new WaitForSeconds(1 / 24);
         }
+        //Disable the mesh renderer to reduce draw calls.
         rendererComponent.enabled = false;
         yield return null;
     }
-
-    
 }

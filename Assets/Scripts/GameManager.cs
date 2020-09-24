@@ -12,12 +12,14 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     float gameTickLength;
     [SerializeField]
-    int gridPreset;
+    int gridLayout;
 
     int score = 0;
 
     [SerializeField]
     Text scoreText;
+    [SerializeField]
+    InputField layoutInputField;
     [SerializeField]
     GameObject gameOverButtonObject;
 
@@ -59,9 +61,11 @@ public class GameManager : MonoBehaviour
         gridWidth = Utils.CeilPower2(gridWidth) + 1;
         gridHeight = Utils.CeilPower2(gridHeight) + 1;
 
+        gridLayout = PlayerPrefs.GetInt("layout");
+
         gameGrid = new int[gridWidth, gridHeight];
         snake = new Snake();
-        obstacles = new Obstacles(gridPreset, gameGrid);
+        obstacles = new Obstacles(gridLayout, gameGrid);
         food = new Food();
 
         OnSnakeFoodEncounter += delegate
@@ -91,35 +95,40 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
+        GetUserInput();
+    }
+
+    void GetUserInput()
+    {
         if (Input.GetKey(KeyCode.UpArrow))
         {
-            if (!Utils.OpposingVectors(movementDirection, new Vector2Int(0, 1)) && canChangeDirection)
+            if (!Utils.OpposingVectors(movementDirection, Vector2Int.up) && canChangeDirection)
             {
-                movementDirection = new Vector2Int(0, 1);
+                movementDirection = Vector2Int.up;
                 canChangeDirection = false;
             }
         }
         else if (Input.GetKey(KeyCode.DownArrow))
         {
-            if (!Utils.OpposingVectors(movementDirection, new Vector2Int(0, -1)) && canChangeDirection)
+            if (!Utils.OpposingVectors(movementDirection, Vector2Int.down) && canChangeDirection)
             {
-                movementDirection = new Vector2Int(0, -1);
+                movementDirection = Vector2Int.down;
                 canChangeDirection = false;
             }
         }
         else if (Input.GetKey(KeyCode.RightArrow))
         {
-            if (!Utils.OpposingVectors(movementDirection, new Vector2Int(1, 0)) && canChangeDirection)
+            if (!Utils.OpposingVectors(movementDirection, Vector2Int.right) && canChangeDirection)
             {
-                movementDirection = new Vector2Int(1, 0);
+                movementDirection = Vector2Int.right;
                 canChangeDirection = false;
             }
         }
         else if (Input.GetKey(KeyCode.LeftArrow))
         {
-            if (!Utils.OpposingVectors(movementDirection, new Vector2Int(-1, 0)) && canChangeDirection)
+            if (!Utils.OpposingVectors(movementDirection, Vector2Int.left) && canChangeDirection)
             {
-                movementDirection = new Vector2Int(-1, 0);
+                movementDirection = Vector2Int.left;
                 canChangeDirection = false;
             }
         }
@@ -127,8 +136,9 @@ public class GameManager : MonoBehaviour
 
     void RunGameLoop()
     {
-        //Start every tick with an empty grid. Not the most optimal, but the easiest way.
-        NullGameGrid();
+        
+            //Start every tick with an empty grid. Not the most optimal, but the easiest way.
+            NullGameGrid();
 
         //Run functionality for each tick of the game loop.
 
@@ -137,13 +147,18 @@ public class GameManager : MonoBehaviour
 
         snake.Move(movementDirection, gameGrid);
 
-        QuerySnakeHeadCell();
-
-        //Map everythig to the grid.
-        foreach (var p in plottables)
+        try //Should fix this later.
         {
-            p.PlotOnGrid(gameGrid);
+            QuerySnakeHead();
+
+        
+            //Map everythig to the grid.
+            foreach (var p in plottables)
+            {
+                p.PlotOnGrid(gameGrid);
+            }
         }
+        catch { }
     }
 
     IEnumerator RunGameLoopRoutine()
@@ -156,7 +171,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void QuerySnakeHeadCell()
+    void QuerySnakeHead()
     {
         foreach (var plottable in plottables)
         {
@@ -185,6 +200,7 @@ public class GameManager : MonoBehaviour
                 }
                 else //Check for intersecting snake.
                 {
+                    //Start loop from 1 to avoid counting the snake head when checking intersections.
                     for (var i = 1; i < plottable.Points.Count; i++)
                     {
                         if(plottable.Points[i] == snake.HeadPoint)
@@ -205,6 +221,16 @@ public class GameManager : MonoBehaviour
     void DisplayGameOverScreen()
     {
         gameOverButtonObject.SetActive(true);
+
+        //Set layout value to 0 if there is no text in the input field.
+        try
+        {
+            PlayerPrefs.SetInt("layout", int.Parse(layoutInputField.text));
+        }
+        catch (Exception)
+        {
+            PlayerPrefs.SetInt("layout", 0);
+        }
     }
 }
 
@@ -221,38 +247,32 @@ public class Snake : IPlottable
     {
         points.Add(new Vector2Int(1, 1));
         points.Add(new Vector2Int(2, 1));
-
-        foreach(var p in points)
-        {
-            MonoBehaviour.print(p);
-        }
     }
 
-    public void Move(Vector2Int dir, in int[,] grid)
+    public void Move(Vector2Int dir, int[,] grid)
     {
-        Vector2Int head = points[0];
-        Vector2Int newPoint = new Vector2Int(head.x + dir.x, head.y + dir.y);
+            Vector2Int newPoint = new Vector2Int(HeadPoint.x + dir.x, HeadPoint.y + dir.y);
 
-        if (newPoint.x >= grid.GetLength(0))
-        {
-            newPoint = new Vector2Int(0, newPoint.y);
-        }
-        else if (newPoint.x < 0)
-        {
-            newPoint = new Vector2Int(grid.GetLength(0) - 1, newPoint.y);
-        }
+            if (newPoint.x >= grid.GetLength(0))
+            {
+                newPoint = new Vector2Int(0, newPoint.y);
+            }
+            else if (newPoint.x < 0)
+            {
+                newPoint = new Vector2Int(grid.GetLength(0) - 1, newPoint.y);
+            }
 
-        if (newPoint.y >= grid.GetLength(1))
-        {
-            newPoint = new Vector2Int(newPoint.x, 0);
-        }
-        else if (newPoint.y < 0)
-        {
-            newPoint = new Vector2Int(newPoint.x, grid.GetLength(1) - 1);
-        }
+            if (newPoint.y >= grid.GetLength(1))
+            {
+                newPoint = new Vector2Int(newPoint.x, 0);
+            }
+            else if (newPoint.y < 0)
+            {
+                newPoint = new Vector2Int(newPoint.x, grid.GetLength(1) - 1);
+            }
 
-        points.Insert(0, newPoint);
-        points.RemoveAt(points.Count - 1);
+            points.Insert(0, newPoint);
+            points.RemoveAt(points.Count - 1);
     }
 
     public void AddSegment()
@@ -286,7 +306,7 @@ public class Obstacles: IPlottable
 
     public List<Vector2Int> Points => points;
 
-    public Obstacles(int preset, in int[,] grid)
+    public Obstacles(int preset, int[,] grid)
     {
         switch (preset)
         {
@@ -350,7 +370,7 @@ public class Food : IPlottable
     public List<Vector2Int> Points => points;
     public bool FoodAlreadyGenerated { get => points.Count > 0; }
 
-    public void PlotOnGrid( int[,] grid)
+    public void PlotOnGrid(int[,] grid)
     {
         foreach (var p in points)
         {
@@ -358,7 +378,7 @@ public class Food : IPlottable
         }
     }
 
-    public void GenerateFood(in int[,] grid)
+    public void GenerateFood(int[,] grid)
     {
         int x = Random.Range(0, grid.GetLength(0));
         int y = Random.Range(0, grid.GetLength(1));
@@ -377,5 +397,5 @@ public class Food : IPlottable
 interface IPlottable
 {
     List<Vector2Int> Points { get; }
-    void PlotOnGrid( int[,] grid);
+    void PlotOnGrid(int[,] grid);
 }
